@@ -1,82 +1,119 @@
-document.addEventListener('DOMContentLoaded', function() {
+/ document.addEventListener('DOMContentLoaded', () => {
+//   console.log('%c DOM Content Loaded and Parsed!', 'color: magenta')
+// *** Used defer instead source tag of index.html file instead***
 
-  const imageId = 72 //Enter your assigned imageId here
+
+  let imageId = 3258 //Enter the id from the fetched image here
   const imageURL = `https://randopic.herokuapp.com/images/${imageId}`
   const likeURL = `https://randopic.herokuapp.com/likes/`
   const commentsURL = `https://randopic.herokuapp.com/comments/`
-  const image = document.getElementById("image")
-  const imageName = document.getElementById('name')
-  const likes = document.getElementById("likes")
-  const like_button = document.getElementById("like_button")
-  const commentForm = document.getElementById("comment_form")
-  const comments = document.getElementById("comments")
-  const commentInput = document.getElementById("comment_input")
+  
+  const image = document.getElementById('image')
+  const name = document.getElementById('name')
+  const likeSpan = document.querySelector('#likes')
+  const likeButton = document.getElementById('like_button')
+  const commentForm = document.querySelector('#comment_form')
+  const commentInput = document.querySelector('#comment_input')
+  const commentUl = document.getElementById('comments')
 
-  fetch(`${imageURL}`)
-  .then(res=> res.json())
-  .then(data => {
-    image.setAttribute("src",`${data.url}`)
-    data.comments.sort(function(a, b){return b.id - a.id}).forEach((comment)=> {
-      comments.prepend(createComment(comment))
+const renderImage = (data) => {
+  image.src = data.url
+}
+
+const renderTitle = (data) => {
+  name.innerText = data.name
+}
+
+const renderLikes = (data) => {
+  likeSpan.innerText = data.like_count
+}
+
+commentForm.addEventListener('submit', (event) => {
+  event.preventDefault()
+  const input = commentInput.value 
+  renderComments({content:input})
+  commentInput.value = ""
+  fetch(commentsURL, {
+    method: 'POST', 
+    headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      image_id: imageId,
+      content: input
     })
-    likes.innerText = data.like_count
-    imageName.innerText = data.name
-  })//end fetch
-
-  like_button.addEventListener('click',() => {
-      likes.innerText = parseInt(likes.innerText) +1
-      fetch(`${likeURL}`, {
-        method: "POST",
-        headers: {'Accept': 'application/json',
-                'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          image_id: `${imageId}`,
-          like_count: `${likes.innerText}`})
-      }).then(res=> res.json())//end fetch
-
-  })//end button event listener
-
-  commentForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-
-    fetch(`${commentsURL}`, {
-      method: "POST",
-      headers: {'Accept': 'application/json',
-              'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        image_id: `${imageId}`,
-        content: `${commentInput.value}`
-      })
-    }).then(res => res.json())
-    .then(comment => {
-    comments.append(createComment(comment))
-    })
-    commentForm.reset()
   })
-
-comments.addEventListener('click', () => {
-    if (event.target.hasAttribute('data-id')){
-      let parentLi = event.target.parentNode
-      fetch(`https://randopic.herokuapp.com/comments/${event.target.getAttribute('data-id')}`, {
-        method: "DELETE"
-      }).then(res => res.json())
-      .then(data => window.alert("comment deleted"))
-      parentLi.remove()
-    }
 })
 
-})//end DOM content loaded
-
-function createDeleteButton(comment){
-  let delete_button = document.createElement('button')
-  delete_button.dataset.id = comment.id
-  delete_button.innerText ="delete comment"
-  return delete_button
+const renderComments = (comment) => {
+  console.log(comment)
+  let commentDiv = document.createElement('div')
+  let commentLi = document.createElement('li')
+    commentLi.innerText = comment.content
+    commentDiv.append(commentLi)
+    commentUl.append(commentDiv)
 }
 
-function createComment(comment_data){
-  let new_comment = document.createElement('li')
-  new_comment.innerText = comment_data.content
-  new_comment.append(createDeleteButton(comment_data))
-  return new_comment
+const fetchInitialImageData = () => {
+  fetch(imageURL)
+  .then(resp => resp.json())
+  .then(data => {
+    console.log(data)
+    renderImage(data)
+    renderTitle(data)
+    renderLikes(data)
+    data.comments.forEach(comment => {
+      renderComments(comment)
+    })
+  })
 }
+
+
+
+const incrementCount = () => {
+  likeSpan.innerText = ++likeSpan.innerText
+  fetch(likeURL, {
+    method: 'POST', 
+    headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      image_id: imageId
+    })
+  })
+}
+
+likeButton.addEventListener('click', () => {
+  incrementCount()
+
+})
+
+
+
+
+fetchInitialImageData()
+
+  
+  // ///////////
+//*** If you want to be a little bit dryer you can make a boilerplate postFetch request */ 
+
+  // const postFetch = (url, requestBody) => {
+  //   return fetch(url, {
+  //       method: 'POST', 
+  //       headers: {
+  //       'Accept': 'application/json',
+  //       'Content-Type': 'application/json'
+  //       },
+  //       body: JSON.stringify({
+  //         requestBody
+  //       })
+  //       .then(resp => resp.json())
+  //       .then(console.log)
+  //     })
+  // }
+
+  // inside of the eventListener you can write 
+  // renderComments({content})
+  // postFetch(commentsURL, {image_id, content})
